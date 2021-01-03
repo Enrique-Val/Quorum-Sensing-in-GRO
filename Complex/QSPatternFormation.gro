@@ -1,0 +1,88 @@
+////////////////////////////////////////////////////////////////////////////
+// 
+//   gro 
+// 
+//   Copyright (c) 2011-2012 Eric Klavins, University of Washington
+//   For more information, email klavins@uw.edu
+// 
+//   This program is free software; you can redistribute it and/or
+//   modify it under the terms of the GNU General Public License
+//   as published by the Free Software Foundation; either version 2
+//   of the License, or (at your option) any later version.
+// 
+//   This program is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+// 
+//   You should have received a copy of the GNU General Public License
+//   along with this program; if not, write to the Free Software
+//   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+// 
+// 
+
+// Coded by Enrique Valero.
+// Program distributed under GNU General Public License v3
+
+include gro
+
+set ( "dt", 0.1 );
+
+// Initialize the simulation parameters
+diffusion_rate := 2;      // signal diffusion rate
+degradation_rate := 0.05;   // signal degradation rate
+emission_rate := 0.05;    // signal emission rate
+signal_adjustment := 0.3;
+k4 := 0.02;   // cell death rate; Figure 6 shows the parameter variation simulations of k4.
+k5 := 1.5; 
+k6 := 1.8;
+
+// Define a signal molecule
+ahl := signal( diffusion_rate, degradation_rate ); 
+
+program rk0() := {
+	gfp := 0;
+	LacIM1 := 0;
+	CI := 0;
+	LacI := 0;
+	
+	// LuxI produces AHL. 
+	rate(emission_rate)  : {  
+		emit_signal( ahl, 10 );	
+	};
+	
+	// LuxR promotes LacIM1, depending on the concentration of LuxR
+	rate(get_signal(ahl) * signal_adjustment) & LacIM1<1 : {LacIM1 := LacIM1 + 0.3;};
+	LacIM1>0 : {LacIM1 := LacIM1 - 0.03;}
+	selected : {print(gfp);};
+	
+	// LacIM1 repression of GFP
+	rate(LacIM1) & gfp>0 : {gfp := gfp - 2;};
+	
+	// LuxR promotes CI, depending on the concentration of LuxR
+	rate(get_signal(ahl) * signal_adjustment) & CI<1 : {CI := CI + 0.3;};
+	CI>0 : {CI := CI - 0.03;} // CI vanishment. If AHL is not in enough concentration, this will ensure that CI does not expresses
+	
+	// CI repression of LacI
+	rate(CI) & LacI>0 : {LacI := LacI - 0.3;};
+	LacI<1 : {LacI := LacI + 0.03;} 
+	
+	// LacIM1 repression of GFP
+	rate(LacIM1) & gfp>0 : {gfp := gfp - 4;};
+	
+	// Gen GFP expression. Maximum at 100
+	gfp <100 : {gfp:=gfp + 0.4}
+	//get_signal(ahl) < k5 & gfp >0 & get_signal(ahl) > k6 : {gfp := gfp - 1;};
+
+
+
+	//rate( k4 * get_signal( ahl ) ) : { 
+	//	die();		      	// cell death
+	//};
+	//skip();
+};
+
+program main() := {
+	ecoli ( [], program rk0() );	
+
+};

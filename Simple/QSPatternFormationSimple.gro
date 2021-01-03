@@ -1,0 +1,60 @@
+////////////////////////////////////////////////////////////////////////////
+// 
+//   gro 
+// 
+//   Copyright (c) 2011-2012 Eric Klavins, University of Washington
+//   For more information, email klavins@uw.edu
+// 
+//   This program is free software; you can redistribute it and/or
+//   modify it under the terms of the GNU General Public License
+//   as published by the Free Software Foundation; either version 2
+//   of the License, or (at your option) any later version.
+// 
+//   This program is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+// 
+//   You should have received a copy of the GNU General Public License
+//   along with this program; if not, write to the Free Software
+//   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+// 
+// 
+
+// Coded by Enrique Valero.
+// Program distributed under GNU General Public License v3
+
+include gro
+
+set ( "dt", 0.1 );
+
+// Initialize the simulation parameters
+k1 := 2;      // signal diffusion rate
+k2 := 0.05;   // signal degradation rate
+k3 := 0.05;    // signal emission rate
+k4 := 0.02;   // cell death rate; Figure 6 shows the parameter variation simulations of k4.
+k5 := 1.5; 
+k6 := 1.8;
+
+// Define a signal molecule
+ahl := signal( k1, k2 ); 
+
+program rk0() := {
+	gfp := 0;
+	get_signal(ahl) > k5 & get_signal(ahl) < k6 : {gfp := gfp + 1;};
+  
+	get_signal(ahl) < k5 & gfp >0 & get_signal(ahl) > k6 : {gfp := gfp - 1;};
+	rate(k3)  : {
+		emit_signal( ahl, 10 );	// signal is emitted at every dt interval
+	};
+
+	//rate( k4 * get_signal( ahl ) ) : { 
+	//	die();		      	// cell death
+	//};
+	skip();
+};
+
+program main() := {
+	ecoli ( [], program rk0() );	
+
+};
