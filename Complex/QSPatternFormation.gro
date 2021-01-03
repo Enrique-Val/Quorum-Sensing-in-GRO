@@ -32,7 +32,7 @@ set ( "dt", 0.1 );
 diffusion_rate := 2;      // signal diffusion rate
 degradation_rate := 0.05;   // signal degradation rate
 emission_rate := 0.05;    // signal emission rate
-signal_adjustment := 0.3;
+signal_adjustment := 0.4;
 k4 := 0.02;   // cell death rate; Figure 6 shows the parameter variation simulations of k4.
 k5 := 1.5; 
 k6 := 1.8;
@@ -52,27 +52,28 @@ program rk0() := {
 	};
 	
 	// LuxR promotes LacIM1, depending on the concentration of LuxR
-	rate(get_signal(ahl) * signal_adjustment) & LacIM1<1 : {LacIM1 := LacIM1 + 0.3;};
-	LacIM1>0 : {LacIM1 := LacIM1 - 0.03;}
-	selected : {print(gfp);};
+	rate(get_signal(ahl) * signal_adjustment) & LacIM1<1 : {LacIM1 := LacIM1 + 0.04;};
+	rate(1-(get_signal(ahl) * signal_adjustment))& LacIM1>0 : {LacIM1 := LacIM1 - 0.10;}
+	//selected : {print("signal: " ,get_signal(ahl), "  LacIM1: ", LacIM1);};
 	
 	// LacIM1 repression of GFP
-	rate(LacIM1) & gfp>0 : {gfp := gfp - 2;};
+	rate(LacIM1/2) & gfp>0 : {gfp := gfp - 1;};
 	
 	// LuxR promotes CI, depending on the concentration of LuxR
-	rate(get_signal(ahl) * signal_adjustment) & CI<1 : {CI := CI + 0.3;};
-	CI>0 : {CI := CI - 0.03;} // CI vanishment. If AHL is not in enough concentration, this will ensure that CI does not expresses
+	rate(get_signal(ahl) * signal_adjustment) & CI<1 : {CI := CI + 0.05;};
+	rate(1-(get_signal(ahl) * signal_adjustment)) & CI>0 : {CI := CI - 0.05;} // CI vanishment. If AHL is not in enough concentration, this will ensure that CI does not expresses
 	
 	// CI repression of LacI
-	rate(CI) & LacI>0 : {LacI := LacI - 0.3;};
-	LacI<1 : {LacI := LacI + 0.03;} 
+	rate(CI) & LacI>0 : {LacI := LacI - 0.05;};
+	rate(1-CI) & LacI<1 : {LacI := LacI + 0.05;} 
 	
-	// LacIM1 repression of GFP
-	rate(LacIM1) & gfp>0 : {gfp := gfp - 4;};
+	// LacI repression of GFP
+	(rate(LacIM1) & rate(LacI)) & gfp>0 : {gfp := gfp - 5;};
+	
+	selected : {print("signal: " ,get_signal(ahl), " LacIM1: ", LacIM1 ,"  LacI: ", LacI);};
 	
 	// Gen GFP expression. Maximum at 100
-	gfp <100 : {gfp:=gfp + 0.4}
-	//get_signal(ahl) < k5 & gfp >0 & get_signal(ahl) > k6 : {gfp := gfp - 1;};
+	(rate(1-LacIM1) & rate(1-LacI)) &  gfp <100 : {gfp:=gfp + 5}
 
 
 
