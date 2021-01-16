@@ -32,8 +32,8 @@ set ( "dt", 0.1 );
 diffusion_rate := 2;      // signal diffusion rate
 degradation_rate := 0.05;   // signal degradation rate
 emission_rate := 0.05;    // signal emission rate
-minimum_concentration := 0.15; 
-maximum_concentration := 0.20;
+minimum_concentration := 0.005; 
+maximum_concentration := 0.02;
 
 // Define a signal molecule
 ahl := signal( diffusion_rate, degradation_rate ); 
@@ -47,12 +47,13 @@ program pattern_formation() := {
 	gfp >0 & (get_signal(ahl) < minimum_concentration |  get_signal(ahl) > maximum_concentration) : {
 		gfp := gfp - 1;
 	};
-	rate(emission_rate)  : {
-		emit_signal( ahl, 1 );	// signal is emitted at every dt interval
-	};
+	selected : {print(get_signal(ahl));};
 };
 
 program main() := {
 	ecoli ( [], program pattern_formation() );	
+	true : {
+		set_signal(ahl,0,0,2);
+	}
 
 };

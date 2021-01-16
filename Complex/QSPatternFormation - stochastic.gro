@@ -32,24 +32,46 @@ set ( "dt", 0.1 );
 diffusion_rate := 2;      // signal diffusion rate
 degradation_rate := 0.05;   // signal degradation rate
 emission_rate := 0.05;    // signal emission rate
-minimum_concentration := 0.15; 
-maximum_concentration := 0.20;
+signal_adjustment := 0.4;
 
 // Define a signal molecule
 ahl := signal( diffusion_rate, degradation_rate ); 
 
 program pattern_formation() := {
 	gfp := 0;
-	get_signal(ahl) > minimum_concentration & get_signal(ahl) < maximum_concentration : {
-		gfp := gfp + 1;
+	LacIM1 := 0;
+	CI := 0;
+	LacI := 0;
+	
+	// LuxI produces AHL. 
+	rate(emission_rate)  : {  
+		emit_signal( ahl, 10 );	
 	};
-  
-	gfp >0 & (get_signal(ahl) < minimum_concentration |  get_signal(ahl) > maximum_concentration) : {
-		gfp := gfp - 1;
-	};
-	rate(emission_rate)  : {
-		emit_signal( ahl, 1 );	// signal is emitted at every dt interval
-	};
+	
+	// LuxR promotes LacIM1, depending on the concentration of LuxR
+	rate(get_signal(ahl) * signal_adjustment) & LacIM1<1 : {LacIM1 := LacIM1 + 0.04;};
+	rate(1-(get_signal(ahl) * signal_adjustment))& LacIM1>0 : {LacIM1 := LacIM1 - 0.10;}
+	//selected : {print("signal: " ,get_signal(ahl), "  LacIM1: ", LacIM1);};
+	
+	// LacIM1 repression of GFP
+	rate(LacIM1/2) & gfp>0 : {gfp := gfp - 1;};
+	
+	// LuxR promotes CI, depending on the concentration of LuxR
+	rate(get_signal(ahl) * signal_adjustment) & CI<1 : {CI := CI + 0.05;};
+	rate(1-(get_signal(ahl) * signal_adjustment)) & CI>0 : {CI := CI - 0.05;} // CI vanishment. If AHL is not in enough concentration, this will ensure that CI does not expresses
+	
+	// CI repression of LacI
+	rate(CI) & LacI>0 : {LacI := LacI - 0.05;};
+	rate(1-CI) & LacI<1 : {LacI := LacI + 0.05;} 
+	
+	// LacI repression of GFP
+	(rate(LacIM1) & rate(LacI)) & gfp>0 : {gfp := gfp - 5;};
+	
+	selected : {print("signal: " ,get_signal(ahl), " LacIM1: ", LacIM1 ,"  LacI: ", LacI);};
+	
+	// Gen GFP expression. Maximum at 100
+	(rate(1-LacIM1) & rate(1-LacI)) &  gfp <100 : {gfp:=gfp + 5}
+
 };
 
 program main() := {

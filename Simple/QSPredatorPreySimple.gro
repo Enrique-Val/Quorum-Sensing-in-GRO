@@ -28,33 +28,61 @@ include gro
 
 set ( "dt", 0.1 );
 
+// Counting of the number of predators and preys
+n_predator := 4;
+n_prey := 4;
+
 // Initialize the simulation parameters
-k1 := 2;      // signal diffusion rate
-k2 := 0.05;   // signal degradation rate
-k3 := 0.05;    // signal emission rate
-k4 := 0.02;   // cell death rate; Figure 6 shows the parameter variation simulations of k4.
-k5 := 1.5; 
-k6 := 1.8;
+diffusion_rate := 2;      // signal diffusion rate
+degradation_rate := 0.01;   // signal degradation rate
+emission_rate := 0.05;    // signal emission rate
 
-// Define a signal molecule
-ahl := signal( k1, k2 ); 
+// Prey and Predator signals
+LasI := signal( diffusion_rate, degradation_rate );  //Emitted by the predator
+LuxI := signal( diffusion_rate, degradation_rate );  // Emitted by the prey
 
-program rk0() := {
-	gfp := 0;
-	get_signal(ahl) > k5 & get_signal(ahl) < k6 : {gfp := gfp + 1;};
-  
-	get_signal(ahl) < k5 & gfp >0 & get_signal(ahl) > k6 : {gfp := gfp - 1;};
-	rate(k3)  : {
-		emit_signal( ahl, 10 );	// signal is emitted at every dt interval
+program predator() := {
+	daughter : { n_predator := n_predator + 1};
+	rfp:=0;
+	rate(emission_rate) : {
+		emit_signal(LasI, 1000);
 	};
+	rate((1-get_signal(LuxI)*(1/10.1))^9) & n_predator > 0 : {
+		die();
+		n_predator := n_predator - 1;
+	};
+	true : {
+		rfp := 1000;
+	};
+	selected : {
+		print(get_signal(LuxI));
+	}
+};
 
-	//rate( k4 * get_signal( ahl ) ) : { 
-	//	die();		      	// cell death
-	//};
-	skip();
+program prey() := {
+	daughter : {n_prey := n_prey + 1};
+	gfp:=0;
+	rate(emission_rate) : {
+		emit_signal(LuxI, 1000);
+	};
+	rate((get_signal(LasI)*0.5)^9) & n_prey > 0 : {
+		die();
+		n_prey := n_prey - 1;
+	};
+	true : {
+		gfp := 1000;
+	};
 };
 
 program main() := {
-	ecoli ( [], program rk0() );	
-
+	ecoli ( [], program predator() );	
+	ecoli ( [], program predator() );
+	ecoli ( [], program predator() );
+	ecoli ( [], program predator() );
+	ecoli ( [], program predator() );
+	ecoli ( [], program prey() );
+	ecoli ( [], program prey() );
+	ecoli ( [], program prey() );
+	ecoli ( [], program prey() );
+	ecoli ( [], program prey() );
 };

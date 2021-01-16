@@ -29,9 +29,9 @@ include gro
 set ( "dt", 0.1 );
 
 // Initialize the simulation parameters
-diffusion_rate := 2;      // signal diffusion rate
-degradation_rate := 0.001;   // signal degradation rate
-emission_rate := 0.05;    // signal emission rate
+diffusion_rate := 1;      // signal diffusion rate
+degradation_rate := 0.0001;   // signal degradation rate
+emission_rate := 0.2;    // signal emission rate
 signal_adjustment := 0.2;
 
 // Define a signal molecule
@@ -46,15 +46,15 @@ alpha_l2 := 1; // LacIM1 synthesis rate
 alpha_g := 2; // GFP transcription rate
 
 beta_c := 0.008; // CI repression coefficient
-beta_l := 0.8*2; // LacI repression coefficient
-beta_lm1 := 0.8*1.2*2; // LacIM1 repression coefficient (slightly less repression than LacI)
+beta_l := 0.8*0.25; // LacI repression coefficient
+beta_lm1 := 0.8*1.2*0.5; // LacIM1 repression coefficient (slightly less repression than LacI)
 
 gamma_r := 0.0231; // LuxR decay
 gamma_c := 0.0692; // CI decay
 gamma_l := 0.0231; // LacI decay
 gamma_g := 0.0692*2; // GFP decay
 
-eta1 := 5; // Transcription factor (LacI)
+eta1 := 10; // Transcription factor (LacI)
 eta2 := 2; // Transcription factor (CI)
 eta3 := 1; // Transcription factor (LuxR)
 
@@ -76,6 +76,11 @@ program pattern_formation() := {
 	LacIM1 := 0;
 	CI := 0;
 	LacI := 0;
+	
+	// Emit AHL
+	rate(emission_rate) : {
+		emit_signal(ahl,0.015);
+	}
 	
 	// LuxR
 	true : {
@@ -115,6 +120,4 @@ program pattern_formation() := {
 
 program main() := {
 	ecoli ( [], program pattern_formation() );
-	true : {set_signal(ahl,0,0,0.2);};
-
 };

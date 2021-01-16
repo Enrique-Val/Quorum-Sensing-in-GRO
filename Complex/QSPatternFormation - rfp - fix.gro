@@ -46,15 +46,15 @@ alpha_l2 := 1; // LacIM1 synthesis rate
 alpha_g := 2; // GFP transcription rate
 
 beta_c := 0.008; // CI repression coefficient
-beta_l := 0.8*2; // LacI repression coefficient
-beta_lm1 := 0.8*1.2*2; // LacIM1 repression coefficient (slightly less repression than LacI)
+beta_l := 0.8; // LacI repression coefficient
+beta_lm1 := 0.8*1.2; // LacIM1 repression coefficient (slightly less repression than LacI)
 
 gamma_r := 0.0231; // LuxR decay
 gamma_c := 0.0692; // CI decay
 gamma_l := 0.0231; // LacI decay
-gamma_g := 0.0692*2; // GFP decay
+gamma_g := 0.0692; // GFP decay
 
-eta1 := 5; // Transcription factor (LacI)
+eta1 := 2; // Transcription factor (LacI)
 eta2 := 2; // Transcription factor (CI)
 eta3 := 1; // Transcription factor (LuxR)
 
@@ -62,15 +62,12 @@ theta_r := 0.01; // LuxR/AHL activation coefficiente
 
 rho_r := 0.5; //LuxR/AHL dimerization
 
-// GFP options
-use_threshold := true;
-threshold := 20;
-amplifier := 2;
 
 
 program pattern_formation() := {
 	gfp_temp := 0;
 	rfp_temp := 0;
+	rfp := 0;
 	gfp := 0;
 	LuxR := 0;
 	LacIM1 := 0;
@@ -99,17 +96,27 @@ program pattern_formation() := {
 	
 	// GFP 
 	true : {
-		gfp_temp := gfp_temp + alpha_g/(1+(LacI/beta_l)^eta1) + alpha_g/(1+(LacIM1/beta_lm1)^eta1) - gamma_g * gfp_temp;
+		gfp_temp := gfp_temp + alpha_g/(1+(LacI/beta_l)^eta1) - gamma_g * gfp_temp;
+	}
+	
+	// RFP 
+	true : {
+		rfp_temp := rfp_temp + alpha_g/(1+(LacIM1/beta_lm1)^eta1) - gamma_g * rfp_temp;
 	}
 	
 	gfp_temp < 0 : {
 		gfp_temp := 0;
 	};
 	
-	use_threshold & gfp_temp>threshold : {gfp := 100;};
-	use_threshold & gfp_temp<threshold : {gfp := 0};
-	!use_threshold : {gfp := gfp_temp*amplifier};
-	selected : {print("signal: " ,get_signal(ahl)*signal_adjustment, "LuxR", LuxR, " LacIM1: ", LacIM1 , " CI: ", CI , "  LacI: ", LacI, " GFP: ", gfp_temp);};
+	rfp_temp < 0 : {
+		rfp_temp := 0;
+	};
+	
+	
+	
+	true : {gfp := gfp_temp* 10;};
+	true : {rfp := rfp_temp* 10;};
+	selected : {print("signal: " ,get_signal(ahl)*signal_adjustment, "LuxR", LuxR, " LacIM1: ", LacIM1 , " CI: ", CI , "  LacI: ", LacI);};
 
 };
 
